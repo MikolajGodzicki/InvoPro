@@ -16,9 +16,6 @@ namespace InvoPro.Data
             
             Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
             
-            System.Diagnostics.Debug.WriteLine($"Baza danych SQLite: {dbPath}");
-            Console.WriteLine($"Baza danych SQLite: {dbPath}");
-            
             optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
 

@@ -24,15 +24,12 @@ namespace InvoPro.Services
         public PdfService()
         {
             _companyService = new CompanyService();
-            System.Diagnostics.Debug.WriteLine("Inicjalizacja iText PDF serwisu.");
         }
 
         public async Task<string> GenerateInvoicePdfAsync(Invoice invoice, string? saveDirectory = null)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("Rozpoczynanie generowania PDF...");
-                
                 // SprawdŸ czy invoice nie jest null
                 if (invoice == null)
                     throw new ArgumentNullException(nameof(invoice), "Faktura nie mo¿e byæ null");
@@ -60,8 +57,6 @@ namespace InvoPro.Services
                 
                 var fileName = $"Faktura_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 var filePath = Path.Combine(saveDirectory, fileName);
-                
-                System.Diagnostics.Debug.WriteLine($"Generowanie PDF: {filePath}");
 
                 // SprawdŸ czy plik nie istnieje ju¿
                 if (File.Exists(filePath))
@@ -72,7 +67,6 @@ namespace InvoPro.Services
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Nie mo¿na usun¹æ istniej¹cego pliku: {ex.Message}");
                         // Spróbuj inn¹ nazwê
                         fileName = $"Faktura_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.pdf";
                         filePath = Path.Combine(saveDirectory, fileName);
@@ -87,7 +81,7 @@ namespace InvoPro.Services
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Nie uda³o siê pobraæ danych firmy: {ex.Message}");
+                    // Kontynuuj bez danych firmy
                 }
 
                 // Utwórz w³aœciwy PDF
@@ -124,7 +118,6 @@ namespace InvoPro.Services
                         // U¿yj czcionki systemowej z obs³ug¹ polskich znaków
                         boldFont = PdfFontFactory.CreateFont(workingArialPath, "Cp1250", PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
                         regularFont = PdfFontFactory.CreateFont(workingArialPath, "Cp1250", PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
-                        System.Diagnostics.Debug.WriteLine($"U¿ywam czcionek {workingArialPath} z obs³ug¹ polskich znaków.");
                     }
                     else
                     {
@@ -133,30 +126,25 @@ namespace InvoPro.Services
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Nie mo¿na za³adowaæ Arial, u¿ywam standardowych czcionek: {ex.Message}");
                     try
                     {
                         // Fallback - spróbuj Times z kodowaniem
                         boldFont = PdfFontFactory.CreateFont(StandardFonts.TIMES_BOLD, "Cp1250");
                         regularFont = PdfFontFactory.CreateFont(StandardFonts.TIMES_ROMAN, "Cp1250");
-                        System.Diagnostics.Debug.WriteLine("U¿ywam czcionek Times z kodowaniem Cp1250.");
                     }
                     catch (Exception ex2)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Nie mo¿na u¿yæ Times z kodowaniem: {ex2.Message}");
                         try
                         {
                             // Fallback - próba z UTF-8
                             boldFont = PdfFontFactory.CreateFont(StandardFonts.TIMES_BOLD, "UTF-8");
                             regularFont = PdfFontFactory.CreateFont(StandardFonts.TIMES_ROMAN, "UTF-8");
-                            System.Diagnostics.Debug.WriteLine("U¿ywam czcionek Times z kodowaniem UTF-8.");
                         }
                         catch
                         {
                             // Last resort - standardowe czcionki bez kodowania
                             boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
                             regularFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
-                            System.Diagnostics.Debug.WriteLine("UWAGA: U¿ywam czcionek bez obs³ugi polskich znaków!");
                         }
                     }
                 }
@@ -294,12 +282,10 @@ namespace InvoPro.Services
                     .SetTextAlignment(TextAlignment.CENTER)
                     .SetFontColor(ColorConstants.GRAY));
 
-                System.Diagnostics.Debug.WriteLine("PDF wygenerowany pomyœlnie.");
                 return filePath;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"B³¹d podczas generowania PDF: {ex}");
                 throw new InvalidOperationException($"Nie uda³o siê wygenerowaæ PDF: {ex.Message}", ex);
             }
         }
