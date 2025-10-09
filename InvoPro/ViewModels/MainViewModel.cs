@@ -6,6 +6,7 @@ using InvoPro.Commands;
 using InvoPro.Models;
 using InvoPro.Views;
 using InvoPro.Services;
+using System.IO;
 
 namespace InvoPro.ViewModels
 {
@@ -17,6 +18,7 @@ namespace InvoPro.ViewModels
         private string _companyName = "Nie ustawiono";
         private readonly IInvoiceService _invoiceService;
         private readonly ICompanyService _companyService;
+        private readonly IPdfService _pdfService;
 
         public ObservableCollection<Invoice> Invoices { get; set; }
         public ObservableCollection<Invoice> FilteredInvoices { get; set; }
@@ -57,11 +59,22 @@ namespace InvoPro.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand SettingsCommand { get; }
         public ICommand DiagnosticsCommand { get; }
+        public ICommand GeneratePdfCommand { get; }
 
         public MainViewModel()
         {
             _invoiceService = new InvoiceService();
             _companyService = new CompanyService();
+            
+            // Spróbuj iText, jeœli siê nie uda, u¿yj HTML
+            try
+            {
+                _pdfService = new PdfService();
+            }
+            catch
+            {
+                _pdfService = new HtmlToPdfService();
+            }
             
             Invoices = new ObservableCollection<Invoice>();
             FilteredInvoices = new ObservableCollection<Invoice>();
@@ -72,6 +85,7 @@ namespace InvoPro.ViewModels
             RefreshCommand = new RelayCommand(RefreshInvoices);
             SettingsCommand = new RelayCommand(OpenSettings);
             DiagnosticsCommand = new RelayCommand(OpenDiagnostics);
+            GeneratePdfCommand = new RelayCommand(GeneratePdf, CanGeneratePdf);
 
             // Inicjalizuj bazê danych i za³aduj dane
             InitializeAsync();
@@ -347,6 +361,55 @@ namespace InvoPro.ViewModels
             {
                 CompanyName = "B³¹d ³adowania";
             }
+        }
+
+        private async void GeneratePdf()
+        {
+            if (SelectedInvoice == null) return;
+
+            try
+            {
+                // Wybór lokalizacji zapisu
+                var saveDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "Pliki PDF (*.pdf)|*.pdf",
+                    FileName = $"Faktura_{SelectedInvoice.Number.Replace("/", "_")}",
+                    DefaultExt = "pdf"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    IsLoading = true;
+                    
+                    var filePath = await _pdfService.GenerateInvoicePdfAsync(SelectedInvoice, Path.GetDirectoryName(saveDialog.FileName));
+                    
+                    var fileExtension = Path.GetExtension(filePath).ToLower();
+                    var message = fileExtension == ".pdf" 
+                        ? $"Faktura zosta³a zapisana jako PDF:\n{filePath}\n\nCzy chcesz otworzyæ plik?"
+                        : $"Faktura zosta³a zapisana jako HTML (do wydruku jako PDF):\n{filePath}\n\nCzy chcesz otworzyæ plik?";
+                    
+                    var result = MessageBox.Show(message, "Faktura wygenerowana", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        await _pdfService.OpenPdfAsync(filePath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"B³¹d podczas generowania PDF: {ex.Message}", 
+                    "B³¹d", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private bool CanGeneratePdf()
+        {
+            return SelectedInvoice != null && !IsLoading;
         }
     }
 }

@@ -51,7 +51,6 @@ namespace InvoPro.Services
                     // Nowa faktura
                     System.Diagnostics.Debug.WriteLine("Dodawanie nowej faktury...");
                     
-                    // WA¯NE: Reset ID dla wszystkich pozycji faktury przy nowej fakturze
                     foreach (var item in invoice.Items)
                     {
                         item.Id = 0; // Wymuœ utworzenie nowego ID

@@ -5,6 +5,9 @@ using System.Windows;
 using System.Windows.Input;
 using InvoPro.Commands;
 using InvoPro.Models;
+using InvoPro.Services;
+using Microsoft.Win32;
+using System.IO;
 
 namespace InvoPro.ViewModels
 {
@@ -14,6 +17,7 @@ namespace InvoPro.ViewModels
         private bool _isEditMode;
         private string _windowTitle = string.Empty;
         private InvoiceItem? _selectedItem;
+        private readonly IPdfService _pdfService;
 
         public Invoice Invoice
         {
@@ -127,6 +131,8 @@ namespace InvoPro.ViewModels
         public ICommand AddItemCommand { get; private set; }
         public ICommand EditItemCommand { get; private set; }
         public ICommand DeleteItemCommand { get; private set; }
+        public ICommand GeneratePdfCommand { get; private set; }
+        public ICommand PreviewPdfCommand { get; private set; }
 
         // Wynik dialogu
         public bool? DialogResult { get; set; }
@@ -139,7 +145,17 @@ namespace InvoPro.ViewModels
                 IssueDate = DateTime.Now,
                 DueDate = DateTime.Now.AddDays(30)
             };
-
+            
+            // Spróbuj iText, jeœli siê nie uda, u¿yj HTML
+            try
+            {
+                _pdfService = new PdfService();
+            }
+            catch
+            {
+                _pdfService = new HtmlToPdfService();
+            }
+            
             InitializeViewModel(false);
         }
 
@@ -174,6 +190,16 @@ namespace InvoPro.ViewModels
                 });
             }
 
+            // Spróbuj iText, jeœli siê nie uda, u¿yj HTML
+            try
+            {
+                _pdfService = new PdfService();
+            }
+            catch
+            {
+                _pdfService = new HtmlToPdfService();
+            }
+            
             InitializeViewModel(true);
         }
 
@@ -188,6 +214,8 @@ namespace InvoPro.ViewModels
             AddItemCommand = new RelayCommand(AddItem);
             EditItemCommand = new RelayCommand(EditItem, CanEditItem);
             DeleteItemCommand = new RelayCommand(DeleteItem, CanDeleteItem);
+            GeneratePdfCommand = new RelayCommand(GeneratePdf, CanGeneratePdf);
+            PreviewPdfCommand = new RelayCommand(PreviewPdf, CanGeneratePdf);
 
             // Pod³¹cz nas³uchiwanie zmian w fakturze dla aktualizacji sum
             Invoice.PropertyChanged += Invoice_PropertyChanged;
@@ -326,6 +354,105 @@ namespace InvoPro.ViewModels
         {
             // To bêdzie obs³u¿one przez okno
             OnPropertyChanged(nameof(DialogResult));
+        }
+
+        private async void GeneratePdf()
+        {
+            if (!ValidateInvoiceForPdf())
+                return;
+
+            try
+            {
+                // Wybór lokalizacji zapisu
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "Pliki PDF (*.pdf)|*.pdf",
+                    FileName = $"Faktura_{Invoice.Number.Replace("/", "_")}",
+                    DefaultExt = "pdf"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    var filePath = await _pdfService.GenerateInvoicePdfAsync(Invoice, Path.GetDirectoryName(saveDialog.FileName));
+                    
+                    var fileExtension = Path.GetExtension(filePath).ToLower();
+                    var message = fileExtension == ".pdf" 
+                        ? $"Faktura zosta³a zapisana jako PDF:\n{filePath}\n\nCzy chcesz otworzyæ plik?"
+                        : $"Faktura zosta³a zapisana jako HTML (do wydruku jako PDF):\n{filePath}\n\nCzy chcesz otworzyæ plik?";
+                    
+                    var result = MessageBox.Show(message, "Faktura wygenerowana", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        await _pdfService.OpenPdfAsync(filePath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"B³¹d podczas generowania faktury: {ex.Message}", 
+                    "B³¹d", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void PreviewPdf()
+        {
+            if (!ValidateInvoiceForPdf())
+                return;
+
+            try
+            {
+                // Generuj w folderze tymczasowym
+                var tempPath = Path.GetTempPath();
+                var filePath = await _pdfService.GenerateInvoicePdfAsync(Invoice, tempPath);
+                
+                // Otwórz podgl¹d
+                await _pdfService.OpenPdfAsync(filePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"B³¹d podczas generowania podgl¹du: {ex.Message}", 
+                    "B³¹d", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private bool CanGeneratePdf()
+        {
+            return !string.IsNullOrWhiteSpace(Invoice.Number) && 
+                   !string.IsNullOrWhiteSpace(Invoice.ClientName) &&
+                   Invoice.Items.Count > 0;
+        }
+
+        private bool ValidateInvoiceForPdf()
+        {
+            var errors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(Number))
+                errors.Add("Numer faktury jest wymagany do generowania PDF.");
+
+            if (string.IsNullOrWhiteSpace(ClientName))
+                errors.Add("Nazwa klienta jest wymagana do generowania PDF.");
+
+            if (string.IsNullOrWhiteSpace(ClientAddress))
+                errors.Add("Adres klienta jest wymagany do generowania PDF.");
+
+            if (string.IsNullOrWhiteSpace(ClientNip))
+                errors.Add("NIP klienta jest wymagany do generowania PDF.");
+
+            if (Invoice.Items.Count == 0)
+                errors.Add("Faktura musi zawieraæ co najmniej jedn¹ pozycjê do generowania PDF.");
+
+            if (Invoice.Items.Any(item => string.IsNullOrWhiteSpace(item.Name)))
+                errors.Add("Wszystkie pozycje musz¹ mieæ nazwê do generowania PDF.");
+
+            if (errors.Any())
+            {
+                var message = "Nie mo¿na wygenerowaæ PDF. Proszê poprawiæ nastêpuj¹ce b³êdy:\n\n" + string.Join("\n", errors);
+                MessageBox.Show(message, "B³êdy walidacji PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -187,19 +187,34 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             
-            <Button Grid.Column="1" Content="Zapisz" 
+            <Button Grid.Column="1" Content="Podglad PDF" 
+                    Command="{Binding PreviewPdfCommand}"
+                    Background="#8E44AD" Foreground="White" 
+                    Padding="15,8" Margin="0,0,5,0" FontWeight="Bold"
+                    BorderThickness="0" MinWidth="100" Cursor="Hand"/>
+            
+            <Button Grid.Column="2" Content="Generuj PDF" 
+                    Command="{Binding GeneratePdfCommand}"
+                    Background="#E67E22" Foreground="White" 
+                    Padding="15,8" Margin="5,0,5,0" FontWeight="Bold"
+                    BorderThickness="0" MinWidth="100" Cursor="Hand"/>
+            
+            <Button Grid.Column="3" Content="Zapisz" 
                     Command="{Binding SaveCommand}"
                     Background="#27AE60" Foreground="White" 
-                    Padding="20,8" Margin="0,0,10,0" FontWeight="Bold"
-                    BorderThickness="0" MinWidth="80"/>
+                    Padding="20,8" Margin="5,0,10,0" FontWeight="Bold"
+                    BorderThickness="0" MinWidth="80" Cursor="Hand"/>
             
-            <Button Grid.Column="2" Content="Anuluj" 
+            <Button Grid.Column="4" Content="Anuluj" 
                     Command="{Binding CancelCommand}"
                     Background="#95A5A6" Foreground="White" 
                     Padding="20,8" FontWeight="Bold"
-                    BorderThickness="0" MinWidth="80"/>
+                    BorderThickness="0" MinWidth="80" Cursor="Hand"/>
         </Grid>
     </Grid>
 </Window>

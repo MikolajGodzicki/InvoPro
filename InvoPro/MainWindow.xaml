@@ -36,6 +36,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
@@ -69,7 +70,13 @@
                         Padding="15,5" Margin="10,0,5,0" FontWeight="Bold"
                         BorderThickness="0" Cursor="Hand"/>
                 
-                <Button Grid.Column="5" Content="Ustawienia" 
+                <Button Grid.Column="5" Content="PDF" 
+                        Command="{Binding GeneratePdfCommand}"
+                        Background="#E67E22" Foreground="White" 
+                        Padding="15,5" Margin="5,0" FontWeight="Bold"
+                        BorderThickness="0" Cursor="Hand"/>
+                
+                <Button Grid.Column="6" Content="Ustawienia" 
                         Command="{Binding SettingsCommand}"
                         Background="#9B59B6" Foreground="White" 
                         Padding="15,5" Margin="5,0,0,0" FontWeight="Bold"
@@ -193,6 +200,27 @@
                             </Style>
                         </DataGridTextColumn.HeaderStyle>
                     </DataGridTextColumn>
+                    
+                    <DataGridTemplateColumn Header="PDF" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="PDF" 
+                                        Command="{Binding DataContext.GeneratePdfCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Background="#8E44AD" Foreground="White" 
+                                        Padding="10,5" Margin="0,2"
+                                        FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.HeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#34495E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="Padding" Value="10,5"/>
+                            </Style>
+                        </DataGridTemplateColumn.HeaderStyle>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
                 
                 <DataGrid.RowStyle>

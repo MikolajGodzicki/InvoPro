@@ -30,7 +30,6 @@ namespace InvoPro.Converters
         {
             if (value is string stringValue)
             {
-                // Usuñ "PLN" i inne znaki, pozostaw tylko liczbê
                 var cleanValue = stringValue.Replace("PLN", "").Replace(" ", "").Trim();
                 
                 if (decimal.TryParse(cleanValue, NumberStyles.Currency, culture, out decimal result))

@@ -12,13 +12,10 @@ namespace InvoPro.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            // Œcie¿ka do bazy danych w folderze aplikacji
             var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "InvoPro", "invoices.db");
             
-            // Utwórz folder jeœli nie istnieje
             Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
             
-            // Dodaj informacjê o lokalizacji bazy danych do debugowania
             System.Diagnostics.Debug.WriteLine($"Baza danych SQLite: {dbPath}");
             Console.WriteLine($"Baza danych SQLite: {dbPath}");
             
@@ -27,7 +24,6 @@ namespace InvoPro.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Konfiguracja modelu Invoice
             modelBuilder.Entity<Invoice>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -40,7 +36,6 @@ namespace InvoPro.Data
                 entity.Property(e => e.IssueDate).IsRequired();
                 entity.Property(e => e.DueDate).IsRequired();
                 
-                // W³aœciwoœci obliczane nie s¹ przechowywane w bazie danych
                 entity.Ignore(e => e.TotalNet);
                 entity.Ignore(e => e.TotalVat);
                 entity.Ignore(e => e.TotalAmount);
@@ -49,7 +44,6 @@ namespace InvoPro.Data
                 entity.Ignore(e => e.TotalAmountFormatted);
             });
 
-            // Konfiguracja modelu InvoiceItem
             modelBuilder.Entity<InvoiceItem>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -62,7 +56,6 @@ namespace InvoPro.Data
                 entity.Property(e => e.DiscountPercentage).HasColumnType("decimal(5,2)");
                 entity.Property(e => e.VatRate).IsRequired().HasColumnType("decimal(5,2)");
                 
-                // W³aœciwoœci obliczane nie s¹ przechowywane w bazie danych
                 entity.Ignore(e => e.UnitPriceGross);
                 entity.Ignore(e => e.TotalNet);
                 entity.Ignore(e => e.VatAmount);
@@ -73,12 +66,10 @@ namespace InvoPro.Data
                 entity.Ignore(e => e.TotalGrossFormatted);
                 entity.Ignore(e => e.VatAmountFormatted);
                 
-                // Dodaj kolumnê InvoiceId jako klucz obcy z relacj¹
                 entity.Property<int>("InvoiceId");
                 entity.HasIndex("InvoiceId");
             });
 
-            // Konfiguracja modelu CompanyInfo
             modelBuilder.Entity<CompanyInfo>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -91,7 +82,6 @@ namespace InvoPro.Data
                 entity.Property(e => e.Website).HasMaxLength(100);
             });
 
-            // Konfiguracja relacji
             modelBuilder.Entity<Invoice>()
                 .HasMany(i => i.Items)
                 .WithOne()
