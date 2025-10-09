@@ -83,9 +83,6 @@ namespace InvoPro.ViewModels
             {
                 IsLoading = true;
                 
-                // Test bazy danych
-                await DatabaseTestService.TestDatabaseAsync();
-                
                 // Inicjalizuj bazê danych
                 await _invoiceService.InitializeDatabaseAsync();
                 
