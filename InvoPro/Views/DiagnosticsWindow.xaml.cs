@@ -58,5 +58,36 @@ namespace InvoPro.Views
         {
             this.Close();
         }
+
+        private void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            RunDiagnostics();
+        }
+
+        private async void ResetButton_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Czy na pewno chcesz zresetowaæ bazê danych?\n\nTO USUNIE WSZYSTKIE DANE!", 
+                "Potwierdzenie resetowania", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    LogTextBox.Text += "\nResetowanie bazy danych...\n";
+                    
+                    var invoiceService = new InvoPro.Services.InvoiceService();
+                    await invoiceService.ResetDatabaseAsync();
+                    
+                    LogTextBox.Text += "Baza danych zosta³a zresetowana pomyœlnie.\n";
+                    
+                    // Odœwie¿ diagnostykê
+                    RunDiagnostics();
+                }
+                catch (Exception ex)
+                {
+                    LogTextBox.Text += $"B£¥D RESETOWANIA: {ex.Message}\n";
+                }
+            }
+        }
     }
 }

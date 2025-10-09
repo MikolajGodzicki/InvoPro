@@ -101,7 +101,33 @@ namespace InvoPro.ViewModels
                     fullMessage += $"\n\nSzczegó³y: {innerException}";
                 }
                 
-                MessageBox.Show(fullMessage, "B³¹d bazy danych", MessageBoxButton.OK, MessageBoxImage.Error);
+                // Jeœli b³¹d zwi¹zany z tabel¹ ju¿ istniej¹c¹, spróbuj zresetowaæ bazê
+                if (ex.Message.Contains("already exists"))
+                {
+                    var result = MessageBox.Show($"{fullMessage}\n\nCzy chcesz zresetowaæ bazê danych?", 
+                        "Konflikt bazy danych", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            await _invoiceService.ResetDatabaseAsync();
+                            await LoadInvoicesAsync();
+                            await LoadCompanyNameAsync();
+                            MessageBox.Show("Baza danych zosta³a zresetowana pomyœlnie.", 
+                                "Sukces", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        catch (Exception resetEx)
+                        {
+                            MessageBox.Show($"B³¹d podczas resetowania bazy: {resetEx.Message}", 
+                                "B³¹d", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(fullMessage, "B³¹d bazy danych", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             finally
             {

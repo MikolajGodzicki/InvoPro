@@ -11,6 +11,7 @@ namespace InvoPro.Services
         Task<Invoice> SaveInvoiceAsync(Invoice invoice);
         Task<bool> DeleteInvoiceAsync(int id);
         Task InitializeDatabaseAsync();
+        Task ResetDatabaseAsync();
     }
 
     public class InvoiceService : IInvoiceService
@@ -49,6 +50,13 @@ namespace InvoPro.Services
                 {
                     // Nowa faktura
                     System.Diagnostics.Debug.WriteLine("Dodawanie nowej faktury...");
+                    
+                    // WA¯NE: Reset ID dla wszystkich pozycji faktury przy nowej fakturze
+                    foreach (var item in invoice.Items)
+                    {
+                        item.Id = 0; // Wymuœ utworzenie nowego ID
+                    }
+                    
                     context.Invoices.Add(invoice);
                 }
                 else
@@ -74,11 +82,12 @@ namespace InvoPro.Services
                     // Usuñ stare pozycje
                     context.InvoiceItems.RemoveRange(existingInvoice.Items);
 
-                    // Dodaj nowe pozycje
+                    // Dodaj nowe pozycje (z resetowanymi ID)
                     foreach (var item in invoice.Items)
                     {
                         var newItem = new InvoiceItem
                         {
+                            Id = 0, // Wymuœ utworzenie nowego ID
                             Name = item.Name,
                             Description = item.Description,
                             Quantity = item.Quantity,
@@ -131,29 +140,40 @@ namespace InvoPro.Services
             {
                 System.Diagnostics.Debug.WriteLine("Inicjalizacja bazy danych...");
                 
-                // SprawdŸ czy baza danych istnieje
-                var canConnect = await context.Database.CanConnectAsync();
-                System.Diagnostics.Debug.WriteLine($"Mo¿na po³¹czyæ siê z baz¹: {canConnect}");
+                // SprawdŸ czy baza danych istnieje i zastosuj migracje
+                var appliedMigrations = await context.Database.GetAppliedMigrationsAsync();
+                var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                 
-                if (!canConnect)
+                System.Diagnostics.Debug.WriteLine($"Zastosowane migracje: {appliedMigrations.Count()}");
+                System.Diagnostics.Debug.WriteLine($"Penduj¹ce migracje: {pendingMigrations.Count()}");
+                
+                if (pendingMigrations.Any())
                 {
-                    // Zastosuj migracje jeœli istniej¹, lub utwórz bazê
-                    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                    if (pendingMigrations.Any())
-                    {
-                        System.Diagnostics.Debug.WriteLine("Stosowanie migracji...");
-                        await context.Database.MigrateAsync();
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("Tworzenie bazy danych...");
-                        await context.Database.EnsureCreatedAsync();
-                    }
+                    System.Diagnostics.Debug.WriteLine("Stosowanie migracji...");
+                    await context.Database.MigrateAsync();
+                    System.Diagnostics.Debug.WriteLine("Migracje zastosowane pomyœlnie.");
+                }
+                else if (!appliedMigrations.Any())
+                {
+                    // Jeœli nie ma ¿adnych migracji, utwórz bazê
+                    System.Diagnostics.Debug.WriteLine("Brak migracji. Tworzenie bazy danych...");
+                    await context.Database.EnsureCreatedAsync();
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Baza danych jest aktualna.");
                 }
                 
-                // SprawdŸ czy baza ma jakieœ dane
-                var invoiceCount = await context.Invoices.CountAsync();
-                System.Diagnostics.Debug.WriteLine($"Liczba faktur w bazie: {invoiceCount}");
+                // SprawdŸ czy mo¿na po³¹czyæ siê z baz¹
+                var canConnect = await context.Database.CanConnectAsync();
+                System.Diagnostics.Debug.WriteLine($"Po³¹czenie z baz¹: {canConnect}");
+                
+                if (canConnect)
+                {
+                    // SprawdŸ czy baza ma jakieœ dane
+                    var invoiceCount = await context.Invoices.CountAsync();
+                    System.Diagnostics.Debug.WriteLine($"Liczba faktur w bazie: {invoiceCount}");
+                }
                 
                 System.Diagnostics.Debug.WriteLine("Inicjalizacja bazy danych zakoñczona pomyœlnie.");
             }
@@ -161,6 +181,31 @@ namespace InvoPro.Services
             {
                 System.Diagnostics.Debug.WriteLine($"B³¹d inicjalizacji bazy danych: {ex}");
                 throw new InvalidOperationException($"B³¹d podczas inicjalizacji bazy danych: {ex.Message}", ex);
+            }
+        }
+
+        public async Task ResetDatabaseAsync()
+        {
+            using var context = new InvoiceDbContext();
+            
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Resetowanie bazy danych...");
+                
+                // Usuñ bazê danych
+                await context.Database.EnsureDeletedAsync();
+                System.Diagnostics.Debug.WriteLine("Baza danych usuniêta.");
+                
+                // Zastosuj migracje
+                await context.Database.MigrateAsync();
+                System.Diagnostics.Debug.WriteLine("Migracje zastosowane.");
+                
+                System.Diagnostics.Debug.WriteLine("Reset bazy danych zakoñczony pomyœlnie.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"B³¹d podczas resetowania bazy danych: {ex}");
+                throw;
             }
         }
     }

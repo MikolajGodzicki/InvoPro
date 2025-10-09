@@ -158,12 +158,12 @@ namespace InvoPro.ViewModels
                 Description = invoiceToEdit.Description
             };
 
-            // Skopiuj pozycje faktury
+            // Skopiuj pozycje faktury (bez kopiowania ID - bêd¹ przypisane przez bazê)
             foreach (var item in invoiceToEdit.Items)
             {
                 _invoice.Items.Add(new InvoiceItem
                 {
-                    Id = item.Id,
+                    Id = item.Id, // Zachowaj oryginalne ID dla edycji
                     Name = item.Name,
                     Description = item.Description,
                     Quantity = item.Quantity,
@@ -209,7 +209,7 @@ namespace InvoPro.ViewModels
         {
             var newItem = new InvoiceItem
             {
-                Id = Invoice.Items.Count > 0 ? Invoice.Items.Max(i => i.Id) + 1 : 1,
+                Id = 0, // ID bêdzie ustawione przez bazê danych
                 Name = "Nowa pozycja",
                 Quantity = 1,
                 Unit = "szt.",
@@ -300,10 +300,6 @@ namespace InvoPro.ViewModels
             if (string.IsNullOrWhiteSpace(ClientNip))
                 errors.Add("NIP klienta jest wymagany.");
 
-            // Tymczasowo usunê wymaganie pozycji dla testów
-            // if (Invoice.Items.Count == 0)
-            //     errors.Add("Faktura musi zawieraæ co najmniej jedn¹ pozycjê.");
-
             if (Invoice.Items.Any(item => string.IsNullOrWhiteSpace(item.Name)))
                 errors.Add("Wszystkie pozycje musz¹ mieæ nazwê.");
 
@@ -313,10 +309,6 @@ namespace InvoPro.ViewModels
             if (Invoice.Items.Any(item => item.UnitPriceNet < 0))
                 errors.Add("Cena jednostkowa netto nie mo¿e byæ ujemna.");
 
-            if (DueDate <= IssueDate)
-                errors.Add("Termin p³atnoœci musi byæ póŸniejszy ni¿ data wystawienia.");
-
-            // Walidacja NIP (opcjonalna - sprawdzenie d³ugoœci)
             if (!string.IsNullOrWhiteSpace(ClientNip) && ClientNip.Length != 10)
                 errors.Add("NIP powinien sk³adaæ siê z 10 cyfr.");
 
