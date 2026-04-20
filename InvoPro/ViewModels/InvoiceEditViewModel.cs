@@ -6,6 +6,7 @@ using System.Windows.Input;
 using InvoPro.Commands;
 using InvoPro.Models;
 using InvoPro.Services;
+using InvoPro.Views;
 using Microsoft.Win32;
 using System.IO;
 
@@ -18,6 +19,9 @@ namespace InvoPro.ViewModels
         private string _windowTitle = string.Empty;
         private InvoiceItem? _selectedItem;
         private readonly IPdfService _pdfService;
+
+        public ObservableCollection<string> Contractors { get; } = new();
+        public ObservableCollection<string> DocumentTitles { get; } = new() { "WZ", "Dokument Dostawy" };
 
         public Invoice Invoice
         {
@@ -61,11 +65,7 @@ namespace InvoPro.ViewModels
             {
                 Invoice.IssueDate = value;
                 OnPropertyChanged();
-                // Automatyczne ustawienie terminu p³atnoœci na 30 dni
-                if (DueDate <= IssueDate)
-                {
-                    DueDate = value.AddDays(30);
-                }
+                DueDate = value;
             }
         }
 
@@ -99,6 +99,17 @@ namespace InvoPro.ViewModels
             }
         }
 
+        public string IssuedBy
+        {
+            get => Invoice.ClientAddress;
+            set
+            {
+                Invoice.ClientAddress = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ClientAddress));
+            }
+        }
+
         public string ClientNip
         {
             get => Invoice.ClientNip;
@@ -106,6 +117,17 @@ namespace InvoPro.ViewModels
             {
                 Invoice.ClientNip = value;
                 OnPropertyChanged();
+            }
+        }
+
+        public string DocumentTitle
+        {
+            get => string.IsNullOrWhiteSpace(Invoice.ClientNip) ? "WZ" : Invoice.ClientNip;
+            set
+            {
+                Invoice.ClientNip = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ClientNip));
             }
         }
 
@@ -131,6 +153,7 @@ namespace InvoPro.ViewModels
         public ICommand AddItemCommand { get; private set; }
         public ICommand EditItemCommand { get; private set; }
         public ICommand DeleteItemCommand { get; private set; }
+        public ICommand OpenContractorsCommand { get; private set; }
         public ICommand GeneratePdfCommand { get; private set; }
         public ICommand PreviewPdfCommand { get; private set; }
 
@@ -143,7 +166,8 @@ namespace InvoPro.ViewModels
             _invoice = new Invoice
             {
                 IssueDate = DateTime.Now,
-                DueDate = DateTime.Now.AddDays(30)
+                DueDate = DateTime.Now,
+                ClientNip = "WZ"
             };
             
             // Spróbuj iText, jeœli siê nie uda, u¿yj HTML
@@ -157,6 +181,8 @@ namespace InvoPro.ViewModels
             }
             
             InitializeViewModel(false);
+            _ = LoadContractorsAsync();
+            _ = LoadDefaultIssuedByAsync();
         }
 
         // Konstruktor dla edycji istniej¹cej faktury
@@ -201,12 +227,14 @@ namespace InvoPro.ViewModels
             }
             
             InitializeViewModel(true);
+            _ = LoadContractorsAsync();
+            _ = LoadDefaultIssuedByAsync();
         }
 
         private void InitializeViewModel(bool isEditMode)
         {
             IsEditMode = isEditMode;
-            WindowTitle = isEditMode ? $"Edycja faktury - {Invoice.Number}" : "Nowa faktura";
+            WindowTitle = isEditMode ? $"Edycja dokumentu WZ - {Invoice.Number}" : "Nowy dokument WZ";
 
             SaveCommand = new RelayCommand(Save, CanSave);
             CancelCommand = new RelayCommand(Cancel);
@@ -214,6 +242,7 @@ namespace InvoPro.ViewModels
             AddItemCommand = new RelayCommand(AddItem);
             EditItemCommand = new RelayCommand(EditItem, CanEditItem);
             DeleteItemCommand = new RelayCommand(DeleteItem, CanDeleteItem);
+            OpenContractorsCommand = new RelayCommand(OpenContractors);
             GeneratePdfCommand = new RelayCommand(GeneratePdf, CanGeneratePdf);
             PreviewPdfCommand = new RelayCommand(PreviewPdf, CanGeneratePdf);
 
@@ -242,7 +271,7 @@ namespace InvoPro.ViewModels
                 Quantity = 1,
                 Unit = "szt.",
                 UnitPriceNet = 0,
-                VatRate = 23
+                VatRate = 0
             };
 
             Invoice.Items.Add(newItem);
@@ -292,8 +321,9 @@ namespace InvoPro.ViewModels
         private bool CanSave()
         {
             return !string.IsNullOrWhiteSpace(ClientName) &&
-                   !string.IsNullOrWhiteSpace(Number);
-                   // Usun¹³em wymaganie pozycji, ¿eby sprawdziæ czy to nie blokuje
+                   !string.IsNullOrWhiteSpace(Number) &&
+                   !string.IsNullOrWhiteSpace(IssuedBy) &&
+                   !string.IsNullOrWhiteSpace(DocumentTitle);
         }
 
         private void Cancel()
@@ -306,10 +336,9 @@ namespace InvoPro.ViewModels
         {
             var year = DateTime.Now.Year;
             var month = DateTime.Now.Month;
-            var day = DateTime.Now.Day;
-            var time = DateTime.Now.ToString("HHmmss");
-            
-            Number = $"FV/{year}/{month:D2}/{day:D2}/{time}";
+            var sequence = DateTime.Now.ToString("ddHHmmss");
+
+            Number = $"WZ {sequence}/{month:D2}/{year}";
         }
 
         private bool ValidateInvoice()
@@ -317,16 +346,19 @@ namespace InvoPro.ViewModels
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(Number))
-                errors.Add("Numer faktury jest wymagany.");
+                errors.Add("Numer WZ jest wymagany.");
 
             if (string.IsNullOrWhiteSpace(ClientName))
-                errors.Add("Nazwa klienta jest wymagana.");
+                errors.Add("Kontrahent jest wymagany.");
 
-            if (string.IsNullOrWhiteSpace(ClientAddress))
-                errors.Add("Adres klienta jest wymagany.");
+            if (string.IsNullOrWhiteSpace(IssuedBy))
+                errors.Add("Pole 'Wystawi³' jest wymagane.");
 
-            if (string.IsNullOrWhiteSpace(ClientNip))
-                errors.Add("NIP klienta jest wymagany.");
+            if (string.IsNullOrWhiteSpace(DocumentTitle))
+                errors.Add("Tytu³ dokumentu jest wymagany.");
+
+            if (Invoice.Items.Count == 0)
+                errors.Add("Dokument musi zawieraæ co najmniej jedn¹ pozycjê towarow¹.");
 
             if (Invoice.Items.Any(item => string.IsNullOrWhiteSpace(item.Name)))
                 errors.Add("Wszystkie pozycje musz¹ mieæ nazwê.");
@@ -336,9 +368,6 @@ namespace InvoPro.ViewModels
 
             if (Invoice.Items.Any(item => item.UnitPriceNet < 0))
                 errors.Add("Cena jednostkowa netto nie mo¿e byæ ujemna.");
-
-            if (!string.IsNullOrWhiteSpace(ClientNip) && ClientNip.Length != 10)
-                errors.Add("NIP powinien sk³adaæ siê z 10 cyfr.");
 
             if (errors.Any())
             {
@@ -367,7 +396,7 @@ namespace InvoPro.ViewModels
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "Pliki PDF (*.pdf)|*.pdf",
-                    FileName = $"Faktura_{Invoice.Number.Replace("/", "_")}",
+                    FileName = $"WZ_{Invoice.Number.Replace("/", "_")}",
                     DefaultExt = "pdf"
                 };
 
@@ -377,10 +406,10 @@ namespace InvoPro.ViewModels
                     
                     var fileExtension = Path.GetExtension(filePath).ToLower();
                     var message = fileExtension == ".pdf" 
-                        ? $"Faktura zosta³a zapisana jako PDF:\n{filePath}\n\nCzy chcesz otworzyæ plik?"
-                        : $"Faktura zosta³a zapisana jako HTML (do wydruku jako PDF):\n{filePath}\n\nCzy chcesz otworzyæ plik?";
+                        ? $"Dokument WZ zosta³ zapisany jako PDF:\n{filePath}\n\nCzy chcesz otworzyæ plik?"
+                        : $"Dokument WZ zosta³ zapisany jako HTML (do wydruku jako PDF):\n{filePath}\n\nCzy chcesz otworzyæ plik?";
                     
-                    var result = MessageBox.Show(message, "Faktura wygenerowana", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    var result = MessageBox.Show(message, "Dokument wygenerowany", MessageBoxButton.YesNo, MessageBoxImage.Information);
                     
                     if (result == MessageBoxResult.Yes)
                     {
@@ -390,7 +419,7 @@ namespace InvoPro.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"B³¹d podczas generowania faktury: {ex.Message}", 
+                MessageBox.Show($"B³¹d podczas generowania dokumentu: {ex.Message}", 
                     "B³¹d", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -420,6 +449,7 @@ namespace InvoPro.ViewModels
         {
             return !string.IsNullOrWhiteSpace(Invoice.Number) && 
                    !string.IsNullOrWhiteSpace(Invoice.ClientName) &&
+                   !string.IsNullOrWhiteSpace(IssuedBy) &&
                    Invoice.Items.Count > 0;
         }
 
@@ -428,19 +458,19 @@ namespace InvoPro.ViewModels
             var errors = new List<string>();
 
             if (string.IsNullOrWhiteSpace(Number))
-                errors.Add("Numer faktury jest wymagany do generowania PDF.");
+                errors.Add("Numer WZ jest wymagany do generowania PDF.");
 
             if (string.IsNullOrWhiteSpace(ClientName))
-                errors.Add("Nazwa klienta jest wymagana do generowania PDF.");
+                errors.Add("Kontrahent jest wymagany do generowania PDF.");
 
-            if (string.IsNullOrWhiteSpace(ClientAddress))
-                errors.Add("Adres klienta jest wymagany do generowania PDF.");
+            if (string.IsNullOrWhiteSpace(IssuedBy))
+                errors.Add("Pole 'Wystawi³' jest wymagane do generowania PDF.");
 
-            if (string.IsNullOrWhiteSpace(ClientNip))
-                errors.Add("NIP klienta jest wymagany do generowania PDF.");
+            if (string.IsNullOrWhiteSpace(DocumentTitle))
+                errors.Add("Tytu³ dokumentu jest wymagany do generowania PDF.");
 
             if (Invoice.Items.Count == 0)
-                errors.Add("Faktura musi zawieraæ co najmniej jedn¹ pozycjê do generowania PDF.");
+                errors.Add("Dokument musi zawieraæ co najmniej jedn¹ pozycjê do generowania PDF.");
 
             if (Invoice.Items.Any(item => string.IsNullOrWhiteSpace(item.Name)))
                 errors.Add("Wszystkie pozycje musz¹ mieæ nazwê do generowania PDF.");
@@ -453,6 +483,60 @@ namespace InvoPro.ViewModels
             }
 
             return true;
+        }
+
+        private async Task LoadContractorsAsync()
+        {
+            try
+            {
+                var contractorService = new ContractorService();
+                var contractors = await contractorService.GetAllContractorsAsync();
+
+                Contractors.Clear();
+                foreach (var contractor in contractors)
+                {
+                    Contractors.Add(contractor.Name);
+                }
+
+                if (!string.IsNullOrWhiteSpace(ClientName) && !Contractors.Contains(ClientName))
+                {
+                    Contractors.Add(ClientName);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void OpenContractors()
+        {
+            var contractorsWindow = new ContractorsWindow
+            {
+                Owner = Application.Current.MainWindow
+            };
+
+            contractorsWindow.ShowDialog();
+            _ = LoadContractorsAsync();
+        }
+
+        private async Task LoadDefaultIssuedByAsync()
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(IssuedBy))
+                    return;
+
+                var companyService = new CompanyService();
+                var company = await companyService.GetCompanyInfoAsync();
+
+                if (!string.IsNullOrWhiteSpace(company?.DefaultIssuedBy))
+                {
+                    IssuedBy = company.DefaultIssuedBy;
+                }
+            }
+            catch
+            {
+            }
         }
     }
 }

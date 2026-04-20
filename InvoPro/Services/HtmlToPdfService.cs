@@ -8,10 +8,12 @@ namespace InvoPro.Services
     public class HtmlToPdfService : IPdfService
     {
         private readonly ICompanyService _companyService;
+        private readonly IContractorService _contractorService;
 
         public HtmlToPdfService()
         {
             _companyService = new CompanyService();
+            _contractorService = new ContractorService();
         }
 
         public async Task<string> GenerateInvoicePdfAsync(Invoice invoice, string? saveDirectory = null)
@@ -38,14 +40,15 @@ namespace InvoPro.Services
                     .Replace(">", "_")
                     .Replace("|", "_");
 
-                var fileName = $"Faktura_{safeInvoiceNumber}.html";
+                var fileName = $"WZ_{safeInvoiceNumber}.html";
                 var filePath = Path.Combine(saveDirectory, fileName);
 
                 // Pobierz dane firmy
                 var companyInfo = await _companyService.GetCompanyInfoAsync();
+                var contractor = await _contractorService.GetContractorByNameAsync(invoice.ClientName ?? string.Empty);
 
                 // Generuj HTML
-                var html = await GenerateInvoiceHtmlAsync(invoice, companyInfo);
+                var html = await GenerateInvoiceHtmlAsync(invoice, companyInfo, contractor);
 
                 // Zapisz HTML do pliku
                 await File.WriteAllTextAsync(filePath, html, Encoding.UTF8);
@@ -77,7 +80,7 @@ namespace InvoPro.Services
             });
         }
 
-        private async Task<string> GenerateInvoiceHtmlAsync(Invoice invoice, CompanyInfo? companyInfo)
+        private async Task<string> GenerateInvoiceHtmlAsync(Invoice invoice, CompanyInfo? companyInfo, Contractor? contractor)
         {
             return await Task.FromResult($@"
 <!DOCTYPE html>
@@ -85,7 +88,7 @@ namespace InvoPro.Services
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Faktura {invoice.Number}</title>
+    <title>{invoice.ClientNip} {invoice.Number}</title>
     <style>
         body {{
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, Arial, sans-serif;
@@ -191,7 +194,7 @@ namespace InvoPro.Services
 </head>
 <body>
     <div class='header'>
-        <h1>Faktura VAT</h1>
+        <h1>{invoice.ClientNip}</h1>
     </div>
 
     <div class='company-info'>
@@ -201,26 +204,28 @@ namespace InvoPro.Services
             <strong>{companyInfo.Name}</strong><br>
             {companyInfo.Address}<br> 
             NIP: {companyInfo.Nip}<br>
-            {(!string.IsNullOrEmpty(companyInfo.Phone) ? $"Tel: {companyInfo.Phone}<br>" : "")}
-            {(!string.IsNullOrEmpty(companyInfo.Email) ? $"Email: {companyInfo.Email}<br>" : "")}
+            {(!string.IsNullOrWhiteSpace(companyInfo.Regon) ? $"REGON: {companyInfo.Regon}<br>" : "")}
+            {(!string.IsNullOrWhiteSpace(companyInfo.Gln) ? $"GLN: {companyInfo.Gln}<br>" : "")}
             " : "Dane firmy nie zosta³y ustawione")}
         </div>
         <div class='company-section'>
             <h3>NABYWCA</h3>
-            <strong>{invoice.ClientName}</strong><br>
-            {invoice.ClientAddress}<br>
-            NIP: {invoice.ClientNip}
+            <strong>{contractor?.Name ?? invoice.ClientName}</strong><br>
+            {(!string.IsNullOrWhiteSpace(contractor?.Address) ? $"{contractor.Address}<br>" : "")}
+            {(!string.IsNullOrWhiteSpace(contractor?.Nip) ? $"NIP: {contractor.Nip}<br>" : "")}
+            {(!string.IsNullOrWhiteSpace(contractor?.Regon) ? $"REGON: {contractor.Regon}<br>" : "")}
+            {(!string.IsNullOrWhiteSpace(contractor?.Gln) ? $"GLN: {contractor.Gln}<br>" : "")}
         </div>
     </div>
 
     <div class='invoice-details'>
         <div>
-            <strong>Numer faktury:</strong> {invoice.Number}<br>
+            <strong>Numer WZ:</strong> {invoice.Number}<br>
             <strong>Miejsce wystawienia:</strong> {(companyInfo?.Address?.Split(',').LastOrDefault()?.Trim() ?? "Warszawa")}
         </div>
         <div>
             <strong>Data wystawienia:</strong> {invoice.IssueDate:dd.MM.yyyy}<br>
-            <strong>Termin p³atnoœci:</strong> {invoice.DueDate:dd.MM.yyyy}
+            <strong>Wystawi³:</strong> {invoice.ClientAddress}
         </div>
     </div>
 
@@ -229,12 +234,12 @@ namespace InvoPro.Services
         <thead>
             <tr>
                 <th style='width: 30px;'>Lp.</th>
-                <th style='width: 200px;'>Nazwa towaru/us³ugi</th>
+                <th style='width: 200px;'>Nazwa towaru</th>
+                <th style='width: 120px;'>Wymiary</th>
                 <th style='width: 60px;'>Iloœæ</th>
                 <th style='width: 50px;'>Jedn.</th>
                 <th style='width: 80px;'>Cena netto (PLN)</th>
-                <th style='width: 60px;'>VAT %</th>
-                <th style='width: 100px;'>Wartoœæ brutto (PLN)</th>
+                <th style='width: 100px;'>Wartoœæ netto (PLN)</th>
             </tr>
         </thead>
         <tbody>
@@ -242,11 +247,11 @@ namespace InvoPro.Services
             <tr>
                 <td style='text-align: center;'>{index + 1}</td>
                 <td>{item.Name}</td>
+                <td>{item.Description}</td>
                 <td class='number'>{item.Quantity:F2}</td>
                 <td style='text-align: center;'>{item.Unit}</td>
                 <td class='number'>{item.UnitPriceNet:F2}</td>
-                <td style='text-align: center;'>{item.VatRate:F0}%</td>
-                <td class='number'>{item.TotalGross:F2}</td>
+                <td class='number'>{item.TotalNet:F2}</td>
             </tr>"))}
         </tbody>
     </table>" : "")}
@@ -257,11 +262,7 @@ namespace InvoPro.Services
             <span>{invoice.TotalNet:F2} PLN</span>
         </div>
         <div class='summary-row'>
-            <span>VAT:</span>
-            <span>{invoice.TotalVat:F2} PLN</span>
-        </div>
-        <div class='summary-row total'>
-            <span>RAZEM DO ZAP£ATY:</span>
+            <span>RAZEM:</span>
             <span>{invoice.TotalAmount:F2} PLN</span>
         </div>
     </div>
@@ -271,11 +272,6 @@ namespace InvoPro.Services
         <h3>Uwagi:</h3>
         <p>{invoice.Description}</p>
     </div>" : "")}
-
-    <div class='footer'>
-        <p>Dokument wygenerowany: {DateTime.Now:dd.MM.yyyy HH:mm}</p>
-        <p class='no-print'>Aby wydrukowaæ lub zapisaæ jako PDF, u¿yj funkcji drukowania przegl¹darki (Ctrl+P)</p>
-    </div>
 </body>
 </html>");
         }

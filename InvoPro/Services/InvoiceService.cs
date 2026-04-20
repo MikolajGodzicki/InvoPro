@@ -7,6 +7,7 @@ namespace InvoPro.Services
     public interface IInvoiceService
     {
         Task<List<Invoice>> GetAllInvoicesAsync();
+        Task<List<string>> GetContractorNamesAsync();
         Task<Invoice?> GetInvoiceByIdAsync(int id);
         Task<Invoice> SaveInvoiceAsync(Invoice invoice);
         Task<bool> DeleteInvoiceAsync(int id);
@@ -26,6 +27,18 @@ namespace InvoPro.Services
                 .ToListAsync();
                 
             return invoices;
+        }
+
+        public async Task<List<string>> GetContractorNamesAsync()
+        {
+            using var context = new InvoiceDbContext();
+
+            return await context.Invoices
+                .Where(i => !string.IsNullOrWhiteSpace(i.ClientName))
+                .Select(i => i.ClientName)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToListAsync();
         }
 
         public async Task<Invoice?> GetInvoiceByIdAsync(int id)
@@ -147,6 +160,40 @@ namespace InvoPro.Services
                 {
                     // Sprawdü czy baza ma jakieú dane
                     var invoiceCount = await context.Invoices.CountAsync();
+
+                    await context.Database.ExecuteSqlRawAsync(@"
+                        CREATE TABLE IF NOT EXISTS Contractors (
+                            Id INTEGER NOT NULL CONSTRAINT PK_Contractors PRIMARY KEY AUTOINCREMENT,
+                            Name TEXT NOT NULL,
+                            Nip TEXT NULL,
+                            Address TEXT NULL,
+                            Regon TEXT NULL,
+                            Gln TEXT NULL
+                        );");
+
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE CompanyInfo ADD COLUMN DefaultIssuedBy TEXT NULL;");
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE CompanyInfo ADD COLUMN Regon TEXT NULL;");
+                    }
+                    catch
+                    {
+                    }
+
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE CompanyInfo ADD COLUMN Gln TEXT NULL;");
+                    }
+                    catch
+                    {
+                    }
                 }
             }
             catch (Exception ex)

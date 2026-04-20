@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using InvoPro.Models;
 using System.IO;
 
@@ -9,6 +10,7 @@ namespace InvoPro.Data
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
         public DbSet<CompanyInfo> CompanyInfo { get; set; }
+        public DbSet<Contractor> Contractors { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -16,7 +18,9 @@ namespace InvoPro.Data
             
             Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
             
-            optionsBuilder.UseSqlite($"Data Source={dbPath}");
+            optionsBuilder
+                .UseSqlite($"Data Source={dbPath}")
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -74,9 +78,23 @@ namespace InvoPro.Data
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Address).IsRequired().HasMaxLength(500);
                 entity.Property(e => e.Nip).IsRequired().HasMaxLength(10);
-                entity.Property(e => e.Phone).HasMaxLength(20);
-                entity.Property(e => e.Email).HasMaxLength(100);
-                entity.Property(e => e.Website).HasMaxLength(100);
+                entity.Property(e => e.Phone).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Website).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Regon).HasMaxLength(20);
+                entity.Property(e => e.Gln).HasMaxLength(30);
+                entity.Property(e => e.DefaultIssuedBy).HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<Contractor>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Nip).HasMaxLength(20);
+                entity.Property(e => e.Address).HasMaxLength(500);
+                entity.Property(e => e.Regon).HasMaxLength(20);
+                entity.Property(e => e.Gln).HasMaxLength(30);
             });
 
             modelBuilder.Entity<Invoice>()

@@ -321,6 +321,7 @@ namespace InvoPro.ViewModels
                 : Invoices.Where(i => 
                     i.Number.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                     i.ClientName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                    i.ClientAddress.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
                     i.ClientNip.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
             foreach (var invoice in filtered)
@@ -373,7 +374,7 @@ namespace InvoPro.ViewModels
                 var saveDialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Filter = "Pliki PDF (*.pdf)|*.pdf",
-                    FileName = $"Faktura_{SelectedInvoice.Number.Replace("/", "_")}",
+                    FileName = $"WZ_{SelectedInvoice.Number.Replace("/", "_")}",
                     DefaultExt = "pdf"
                 };
 

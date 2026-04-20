@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:InvoPro"
         xmlns:vm="clr-namespace:InvoPro.ViewModels"
         mc:Ignorable="d"
-        Title="InvoPro - System Fakturowania" Height="700" Width="1200"
+        Title="InvoPro - System dokumentów WZ" Height="700" Width="1200"
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/favicon.ico">
     
@@ -24,7 +24,7 @@
 
 
         <Border Grid.Row="0" Background="#2C3E50" Padding="15">
-            <TextBlock Text="System Fakturowania InvoPro" 
+            <TextBlock Text="System dokumentów WZ InvoPro" 
                        FontSize="24" FontWeight="Bold" 
                        Foreground="White" HorizontalAlignment="Center"/>
         </Border>
@@ -53,7 +53,7 @@
                              BorderBrush="#34495E" BorderThickness="1"/>
                 </StackPanel>
                 
-                <Button Grid.Column="1" Content="Dodaj Fakturę" 
+                <Button Grid.Column="1" Content="Dodaj WZ" 
                         Command="{Binding AddInvoiceCommand}"
                         Background="#27AE60" Foreground="White" 
                         Padding="15,5" Margin="10,0" FontWeight="Bold"
@@ -142,7 +142,7 @@
                         </DataGridTextColumn.HeaderStyle>
                     </DataGridTextColumn>
                     
-                    <DataGridTextColumn Header="Termin płatności" Binding="{Binding DueDate, StringFormat=dd.MM.yyyy}" Width="120" IsReadOnly="True">
+                    <DataGridTextColumn Header="Typ" Binding="{Binding ClientNip}" Width="120" IsReadOnly="True">
                         <DataGridTextColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#34495E"/>
@@ -153,7 +153,7 @@
                         </DataGridTextColumn.HeaderStyle>
                     </DataGridTextColumn>
                     
-                    <DataGridTextColumn Header="Klient" Binding="{Binding ClientName}" Width="180" IsReadOnly="True">
+                    <DataGridTextColumn Header="Kontrahent" Binding="{Binding ClientName}" Width="180" IsReadOnly="True">
                         <DataGridTextColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#34495E"/>
@@ -164,7 +164,7 @@
                         </DataGridTextColumn.HeaderStyle>
                     </DataGridTextColumn>
                     
-                    <DataGridTextColumn Header="NIP" Binding="{Binding ClientNip}" Width="120" IsReadOnly="True">
+                    <DataGridTextColumn Header="Wystawił" Binding="{Binding ClientAddress}" Width="140" IsReadOnly="True">
                         <DataGridTextColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#34495E"/>
@@ -180,7 +180,7 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     
-                    <DataGridTextColumn Header="Kwota (PLN)" Binding="{Binding TotalAmount, StringFormat='{}{0:F2} PLN'}" Width="120" IsReadOnly="True">
+                    <DataGridTextColumn Header="Kwota netto (PLN)" Binding="{Binding TotalNet, StringFormat='{}{0:F2} PLN'}" Width="140" IsReadOnly="True">
                         <DataGridTextColumn.HeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#34495E"/>
@@ -270,7 +270,7 @@
         <StatusBar Grid.Row="3" Background="#34495E">
             <StatusBarItem>
                 <TextBlock Foreground="White">
-                    <Run Text="Liczba faktur: "/>
+                    <Run Text="Liczba dokumentów: "/>
                     <Run Text="{Binding FilteredInvoices.Count, Mode=OneWay}" FontWeight="Bold"/>
                 </TextBlock>
             </StatusBarItem>

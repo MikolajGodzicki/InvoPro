@@ -18,9 +18,23 @@
         </Border>
         
         <TabControl Grid.Row="1">
-            <TabItem Header="Dane faktury">
+            <TabItem Header="Dane dokumentu WZ">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
                     <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Tytuł:" 
+                                       VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding DocumentTitles}"
+                                      SelectedItem="{Binding DocumentTitle, UpdateSourceTrigger=PropertyChanged}"
+                                      Height="25"/>
+                        </Grid>
+
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="120"/>
@@ -28,7 +42,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
-                            <TextBlock Grid.Column="0" Text="Numer faktury:" 
+                            <TextBlock Grid.Column="0" Text="Numer WZ:" 
                                        VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
                             <TextBox Grid.Column="1" 
                                      Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}"
@@ -53,11 +67,20 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="120"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             
-                            <TextBlock Grid.Column="0" Text="Termin platnosci:" 
+                            <TextBlock Grid.Column="0" Text="Kontrahent:" 
                                        VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
-                            <DatePicker Grid.Column="1" SelectedDate="{Binding DueDate}" Height="25"/>
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding Contractors}"
+                                      Text="{Binding ClientName, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="True"
+                                      Height="25" Margin="0,0,10,0"/>
+                            <Button Grid.Column="2" Content="Lista"
+                                    Command="{Binding OpenContractorsCommand}"
+                                    Height="25" Width="70"/>
                         </Grid>
                         
                         <Grid Margin="0,0,0,10">
@@ -66,32 +89,9 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             
-                            <TextBlock Grid.Column="0" Text="Nazwa klienta:" 
+                            <TextBlock Grid.Column="0" Text="Wystawił:" 
                                        VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding ClientName, UpdateSourceTrigger=PropertyChanged}" Height="25" Padding="5"/>
-                        </Grid>
-                        
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <TextBlock Grid.Column="0" Text="Adres klienta:" 
-                                       VerticalAlignment="Top" FontWeight="Bold" Margin="0,0,10,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding ClientAddress, UpdateSourceTrigger=PropertyChanged}"
-                                     Height="60" Padding="5" TextWrapping="Wrap" AcceptsReturn="True"/>
-                        </Grid>
-                        
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <TextBlock Grid.Column="0" Text="NIP klienta:" 
-                                       VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
-                            <TextBox Grid.Column="1" Text="{Binding ClientNip, UpdateSourceTrigger=PropertyChanged}" Height="25" Padding="5"/>
+                            <TextBox Grid.Column="1" Text="{Binding IssuedBy, UpdateSourceTrigger=PropertyChanged}" Height="25" Padding="5"/>
                         </Grid>
                         
                         <Grid Margin="0,0,0,10">
@@ -109,7 +109,7 @@
                 </ScrollViewer>
             </TabItem>
             
-            <TabItem Header="Pozycje faktury">
+            <TabItem Header="Pozycje WZ">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -139,15 +139,11 @@
                         
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Nazwa" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="120"/>
-                            <DataGridTextColumn Header="Opis" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                            <DataGridTextColumn Header="Wymiary (opcjonalnie)" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
                             <DataGridTextColumn Header="Ilosc" Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, StringFormat=F2}" Width="60"/>
                             <DataGridTextColumn Header="Jednostka" Binding="{Binding Unit, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
                             <DataGridTextColumn Header="Cena netto (PLN)" Binding="{Binding UnitPriceNet, UpdateSourceTrigger=PropertyChanged, StringFormat='F2'}" Width="110"/>
-                            <DataGridTextColumn Header="Cena brutto (PLN)" Binding="{Binding UnitPriceGross, UpdateSourceTrigger=PropertyChanged, StringFormat='F2'}" Width="110"/>
-                            <DataGridTextColumn Header="Rabat %" Binding="{Binding DiscountPercentage, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}" Width="70"/>
-                            <DataGridTextColumn Header="VAT %" Binding="{Binding VatRate, UpdateSourceTrigger=PropertyChanged, StringFormat=F0}" Width="60"/>
                             <DataGridTextColumn Header="Wartosc netto (PLN)" Binding="{Binding TotalNet, Mode=OneWay, StringFormat='F2'}" Width="120" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Wartosc brutto (PLN)" Binding="{Binding TotalGross, Mode=OneWay, StringFormat='F2'}" Width="120" IsReadOnly="True"/>
                         </DataGrid.Columns>
                     </DataGrid>
                     
@@ -155,7 +151,6 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="150"/>
                                 <ColumnDefinition Width="150"/>
                             </Grid.ColumnDefinitions>
@@ -168,12 +163,7 @@
                             </StackPanel>
                             
                             <StackPanel Grid.Column="2" HorizontalAlignment="Right">
-                                <TextBlock Text="VAT:" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding TotalVat, StringFormat='{}{0:F2} PLN'}" FontSize="14" FontWeight="Bold" Foreground="#F39C12"/>
-                            </StackPanel>
-                            
-                            <StackPanel Grid.Column="3" HorizontalAlignment="Right">
-                                <TextBlock Text="Suma brutto:" FontWeight="Bold"/>
+                                <TextBlock Text="Razem:" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding TotalAmount, StringFormat='{}{0:F2} PLN'}" FontSize="16" FontWeight="Bold" Foreground="#E74C3C"/>
                             </StackPanel>
                         </Grid>

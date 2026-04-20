@@ -55,32 +55,32 @@ namespace InvoPro.ViewModels
             }
         }
 
-        public string Phone
+        public string Regon
         {
-            get => CompanyInfo.Phone;
+            get => CompanyInfo.Regon ?? string.Empty;
             set
             {
-                CompanyInfo.Phone = value;
+                CompanyInfo.Regon = value;
                 OnPropertyChanged();
             }
         }
 
-        public string Email
+        public string Gln
         {
-            get => CompanyInfo.Email;
+            get => CompanyInfo.Gln ?? string.Empty;
             set
             {
-                CompanyInfo.Email = value;
+                CompanyInfo.Gln = value;
                 OnPropertyChanged();
             }
         }
 
-        public string Website
+        public string DefaultIssuedBy
         {
-            get => CompanyInfo.Website;
+            get => CompanyInfo.DefaultIssuedBy ?? string.Empty;
             set
             {
-                CompanyInfo.Website = value;
+                CompanyInfo.DefaultIssuedBy = value;
                 OnPropertyChanged();
             }
         }
@@ -117,18 +117,18 @@ namespace InvoPro.ViewModels
                         Name = existingInfo.Name,
                         Address = existingInfo.Address,
                         Nip = existingInfo.Nip,
-                        Phone = existingInfo.Phone,
-                        Email = existingInfo.Email,
-                        Website = existingInfo.Website
+                        Regon = existingInfo.Regon,
+                        Gln = existingInfo.Gln,
+                        DefaultIssuedBy = existingInfo.DefaultIssuedBy
                     };
                     
                     // Aktualizuj bindowane w³aœciwoœci
                     OnPropertyChanged(nameof(Name));
                     OnPropertyChanged(nameof(Address));
                     OnPropertyChanged(nameof(Nip));
-                    OnPropertyChanged(nameof(Phone));
-                    OnPropertyChanged(nameof(Email));
-                    OnPropertyChanged(nameof(Website));
+                    OnPropertyChanged(nameof(Regon));
+                    OnPropertyChanged(nameof(Gln));
+                    OnPropertyChanged(nameof(DefaultIssuedBy));
                 }
             }
             catch (Exception ex)
@@ -200,10 +200,6 @@ namespace InvoPro.ViewModels
             // Walidacja NIP (opcjonalna - sprawdzenie d³ugoœci)
             if (!string.IsNullOrWhiteSpace(Nip) && Nip.Length != 10)
                 errors.Add("NIP powinien sk³adaæ siê z 10 cyfr.");
-
-            // Walidacja email (opcjonalna)
-            if (!string.IsNullOrWhiteSpace(Email) && !Email.Contains("@"))
-                errors.Add("Nieprawid³owy format adresu email.");
 
             if (errors.Any())
             {

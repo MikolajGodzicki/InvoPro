@@ -20,10 +20,12 @@ namespace InvoPro.Services
     public class PdfService : IPdfService
     {
         private readonly ICompanyService _companyService;
+        private readonly IContractorService _contractorService;
 
         public PdfService()
         {
             _companyService = new CompanyService();
+            _contractorService = new ContractorService();
         }
 
         public async Task<string> GenerateInvoicePdfAsync(Invoice invoice, string? saveDirectory = null)
@@ -55,7 +57,7 @@ namespace InvoPro.Services
                     .Replace(">", "_")
                     .Replace("|", "_");
                 
-                var fileName = $"Faktura_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+                var fileName = $"WZ_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
                 var filePath = Path.Combine(saveDirectory, fileName);
 
                 // SprawdŸ czy plik nie istnieje ju¿
@@ -68,7 +70,7 @@ namespace InvoPro.Services
                     catch (Exception ex)
                     {
                         // Spróbuj inn¹ nazwê
-                        fileName = $"Faktura_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.pdf";
+                        fileName = $"WZ_{safeInvoiceNumber}_{DateTime.Now:yyyyMMdd_HHmmss_fff}.pdf";
                         filePath = Path.Combine(saveDirectory, fileName);
                     }
                 }
@@ -82,6 +84,15 @@ namespace InvoPro.Services
                 catch (Exception ex)
                 {
                     // Kontynuuj bez danych firmy
+                }
+
+                Contractor? contractor = null;
+                try
+                {
+                    contractor = await _contractorService.GetContractorByNameAsync(invoice.ClientName ?? string.Empty);
+                }
+                catch
+                {
                 }
 
                 // Utwórz w³aœciwy PDF
@@ -150,7 +161,7 @@ namespace InvoPro.Services
                 }
 
                 // === NAG£ÓWEK DOKUMENTU ===
-                var title = new Paragraph("Faktura VAT ")
+                var title = new Paragraph(string.IsNullOrWhiteSpace(invoice.ClientNip) ? "WZ" : invoice.ClientNip)
                     .SetFont(boldFont)
                     .SetFontSize(24)
                     .SetTextAlignment(TextAlignment.CENTER)
@@ -169,10 +180,10 @@ namespace InvoPro.Services
                     sellerCell.Add(new Paragraph(companyInfo.Name ?? "").SetFont(boldFont));
                     sellerCell.Add(new Paragraph(companyInfo.Address ?? "").SetFont(regularFont));
                     sellerCell.Add(new Paragraph($"NIP: {companyInfo.Nip ?? ""}").SetFont(regularFont));
-                    if (!string.IsNullOrEmpty(companyInfo.Phone))
-                        sellerCell.Add(new Paragraph($"Tel: {companyInfo.Phone}").SetFont(regularFont));
-                    if (!string.IsNullOrEmpty(companyInfo.Email))
-                        sellerCell.Add(new Paragraph($"Email: {companyInfo.Email}").SetFont(regularFont));
+                    if (!string.IsNullOrWhiteSpace(companyInfo.Regon))
+                        sellerCell.Add(new Paragraph($"REGON: {companyInfo.Regon}").SetFont(regularFont));
+                    if (!string.IsNullOrWhiteSpace(companyInfo.Gln))
+                        sellerCell.Add(new Paragraph($"GLN: {companyInfo.Gln}").SetFont(regularFont));
                 }
                 else
                 {
@@ -183,9 +194,15 @@ namespace InvoPro.Services
                 // Kolumna 2: Dane nabywcy
                 var buyerCell = new Cell();
                 buyerCell.Add(new Paragraph("NABYWCA").SetFont(boldFont).SetFontSize(12));
-                buyerCell.Add(new Paragraph(invoice.ClientName ?? "").SetFont(boldFont));
-                buyerCell.Add(new Paragraph(invoice.ClientAddress ?? "").SetFont(regularFont));
-                buyerCell.Add(new Paragraph($"NIP: {invoice.ClientNip ?? ""}").SetFont(regularFont));
+                buyerCell.Add(new Paragraph(contractor?.Name ?? invoice.ClientName ?? "").SetFont(boldFont));
+                if (!string.IsNullOrWhiteSpace(contractor?.Address))
+                    buyerCell.Add(new Paragraph(contractor.Address).SetFont(regularFont));
+                if (!string.IsNullOrWhiteSpace(contractor?.Nip))
+                    buyerCell.Add(new Paragraph($"NIP: {contractor.Nip}").SetFont(regularFont));
+                if (!string.IsNullOrWhiteSpace(contractor?.Regon))
+                    buyerCell.Add(new Paragraph($"REGON: {contractor.Regon}").SetFont(regularFont));
+                if (!string.IsNullOrWhiteSpace(contractor?.Gln))
+                    buyerCell.Add(new Paragraph($"GLN: {contractor.Gln}").SetFont(regularFont));
                 buyerCell.SetBorder(iText.Layout.Borders.Border.NO_BORDER);
 
                 headerTable.AddCell(sellerCell);
@@ -197,7 +214,7 @@ namespace InvoPro.Services
                 var invoiceInfoTable = new Table(4, false);
                 invoiceInfoTable.SetWidth(UnitValue.CreatePercentValue(100));
 
-                invoiceInfoTable.AddCell(CreateInfoCell("Numer faktury:", boldFont));
+                invoiceInfoTable.AddCell(CreateInfoCell("Numer WZ:", boldFont));
                 invoiceInfoTable.AddCell(CreateInfoCell(invoice.Number ?? "", regularFont));
                 invoiceInfoTable.AddCell(CreateInfoCell("Data wystawienia:", boldFont));
                 invoiceInfoTable.AddCell(CreateInfoCell(invoice.IssueDate.ToString("dd.MM.yyyy"), regularFont));
@@ -211,8 +228,8 @@ namespace InvoPro.Services
                         place = addressParts[^1].Trim();
                 }
                 invoiceInfoTable.AddCell(CreateInfoCell(place, regularFont));
-                invoiceInfoTable.AddCell(CreateInfoCell("Termin p³atnoœci:", boldFont));
-                invoiceInfoTable.AddCell(CreateInfoCell(invoice.DueDate.ToString("dd.MM.yyyy"), regularFont));
+                invoiceInfoTable.AddCell(CreateInfoCell("Wystawi³:", boldFont));
+                invoiceInfoTable.AddCell(CreateInfoCell(invoice.ClientAddress ?? string.Empty, regularFont));
 
                 document.Add(invoiceInfoTable);
 
@@ -225,12 +242,12 @@ namespace InvoPro.Services
 
                     // Nag³ówki kolumn
                     itemsTable.AddHeaderCell(CreateHeaderCell("Lp.", boldFont));
-                    itemsTable.AddHeaderCell(CreateHeaderCell("Nazwa towaru/us³ugi", boldFont));
+                    itemsTable.AddHeaderCell(CreateHeaderCell("Nazwa towaru", boldFont));
+                    itemsTable.AddHeaderCell(CreateHeaderCell("Wymiary", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Iloœæ", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Jedn.", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Cena netto", boldFont));
-                    itemsTable.AddHeaderCell(CreateHeaderCell("VAT %", boldFont));
-                    itemsTable.AddHeaderCell(CreateHeaderCell("Wartoœæ brutto", boldFont));
+                    itemsTable.AddHeaderCell(CreateHeaderCell("Wartoœæ netto", boldFont));
 
                     // Pozycje
                     int lp = 1;
@@ -238,11 +255,11 @@ namespace InvoPro.Services
                     {
                         itemsTable.AddCell(CreateCell(lp.ToString(), regularFont));
                         itemsTable.AddCell(CreateCell(item.Name ?? "", regularFont));
+                        itemsTable.AddCell(CreateCell(item.Description ?? "", regularFont));
                         itemsTable.AddCell(CreateCell(item.Quantity.ToString("F2"), regularFont));
                         itemsTable.AddCell(CreateCell(item.Unit ?? "", regularFont));
                         itemsTable.AddCell(CreateCell($"{item.UnitPriceNet:F2} PLN", regularFont));
-                        itemsTable.AddCell(CreateCell($"{item.VatRate:F0}%", regularFont));
-                        itemsTable.AddCell(CreateCell($"{item.TotalGross:F2} PLN", regularFont));
+                        itemsTable.AddCell(CreateCell($"{item.TotalNet:F2} PLN", regularFont));
                         lp++;
                     }
 
@@ -258,10 +275,7 @@ namespace InvoPro.Services
                 summaryTable.AddCell(CreateSummaryCell("Wartoœæ netto:", boldFont));
                 summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalNet:F2} PLN", regularFont));
 
-                summaryTable.AddCell(CreateSummaryCell("VAT:", boldFont));
-                summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalVat:F2} PLN", regularFont));
-
-                summaryTable.AddCell(CreateSummaryCell("RAZEM DO ZAP£ATY:", boldFont));
+                summaryTable.AddCell(CreateSummaryCell("RAZEM:", boldFont));
                 summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalAmount:F2} PLN", boldFont));
 
                 document.Add(summaryTable);

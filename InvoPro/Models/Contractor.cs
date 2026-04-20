@@ -3,18 +3,14 @@ using System.Runtime.CompilerServices;
 
 namespace InvoPro.Models
 {
-    public class CompanyInfo : INotifyPropertyChanged
+    public class Contractor : INotifyPropertyChanged
     {
         private int _id;
         private string _name = string.Empty;
-        private string _address = string.Empty;
-        private string _nip = string.Empty;
-        private string _phone = string.Empty;
-        private string _email = string.Empty;
-        private string _website = string.Empty;
+        private string? _nip;
+        private string? _address;
         private string? _regon;
         private string? _gln;
-        private string? _defaultIssuedBy;
 
         public int Id
         {
@@ -28,34 +24,16 @@ namespace InvoPro.Models
             set => SetProperty(ref _name, value);
         }
 
-        public string Address
-        {
-            get => _address;
-            set => SetProperty(ref _address, value);
-        }
-
-        public string Nip
+        public string? Nip
         {
             get => _nip;
             set => SetProperty(ref _nip, value);
         }
 
-        public string Phone
+        public string? Address
         {
-            get => _phone;
-            set => SetProperty(ref _phone, value);
-        }
-
-        public string Email
-        {
-            get => _email;
-            set => SetProperty(ref _email, value);
-        }
-
-        public string Website
-        {
-            get => _website;
-            set => SetProperty(ref _website, value);
+            get => _address;
+            set => SetProperty(ref _address, value);
         }
 
         public string? Regon
@@ -68,12 +46,6 @@ namespace InvoPro.Models
         {
             get => _gln;
             set => SetProperty(ref _gln, value);
-        }
-
-        public string? DefaultIssuedBy
-        {
-            get => _defaultIssuedBy;
-            set => SetProperty(ref _defaultIssuedBy, value);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
