@@ -23,6 +23,20 @@ namespace InvoPro.ViewModels
         public ObservableCollection<string> Contractors { get; } = new();
         public ObservableCollection<string> DocumentTitles { get; } = new() { "WZ", "Dokument Dostawy" };
 
+        private bool _showNetPrices;
+        
+        public bool ShowNetPrices
+        {
+            get => _showNetPrices;
+            set
+            {
+                if (SetProperty(ref _showNetPrices, value))
+                {
+                    Invoice.ShowNetPrices = value;
+                }
+            }
+        }
+
         public Invoice Invoice
         {
             get => _invoice;
@@ -167,8 +181,11 @@ namespace InvoPro.ViewModels
             {
                 IssueDate = DateTime.Now,
                 DueDate = DateTime.Now,
-                ClientNip = "WZ"
+                ClientNip = "WZ",
+                ShowNetPrices = false
             };
+            
+            _showNetPrices = false;
             
             // Spróbuj iText, jeœli siê nie uda, u¿yj HTML
             try
@@ -197,10 +214,12 @@ namespace InvoPro.ViewModels
                 ClientName = invoiceToEdit.ClientName,
                 ClientAddress = invoiceToEdit.ClientAddress,
                 ClientNip = invoiceToEdit.ClientNip,
-                Description = invoiceToEdit.Description
+                Description = invoiceToEdit.Description,
+                ShowNetPrices = invoiceToEdit.ShowNetPrices
             };
+            _showNetPrices = invoiceToEdit.ShowNetPrices;
 
-            // Skopiuj pozycje faktury (bez kopiowania ID - bêd¹ przypisane przez bazê)
+            // Skopiuj pozycje faktury (bez kopiowania ID - bd przypisane przez bazê)
             foreach (var item in invoiceToEdit.Items)
             {
                 _invoice.Items.Add(new InvoiceItem

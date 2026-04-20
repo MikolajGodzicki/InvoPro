@@ -237,17 +237,21 @@ namespace InvoPro.Services
                 if (invoice.Items?.Count > 0)
                 {
                     document.Add(new Paragraph("\n"));
-                    var itemsTable = new Table(7, false);
+                    int columnsCount = invoice.ShowNetPrices ? 7 : 5;
+                    var itemsTable = new Table(columnsCount, false);
                     itemsTable.SetWidth(UnitValue.CreatePercentValue(100));
 
-                    // Nag³ówki kolumn
+                    // Nagwki kolumn
                     itemsTable.AddHeaderCell(CreateHeaderCell("Lp.", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Nazwa towaru", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Wymiary", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Iloœæ", boldFont));
                     itemsTable.AddHeaderCell(CreateHeaderCell("Jedn.", boldFont));
-                    itemsTable.AddHeaderCell(CreateHeaderCell("Cena netto", boldFont));
-                    itemsTable.AddHeaderCell(CreateHeaderCell("Wartoœæ netto", boldFont));
+                    if (invoice.ShowNetPrices)
+                    {
+                        itemsTable.AddHeaderCell(CreateHeaderCell("Cena netto", boldFont));
+                        itemsTable.AddHeaderCell(CreateHeaderCell("Warto netto", boldFont));
+                    }
 
                     // Pozycje
                     int lp = 1;
@@ -258,27 +262,33 @@ namespace InvoPro.Services
                         itemsTable.AddCell(CreateCell(item.Description ?? "", regularFont));
                         itemsTable.AddCell(CreateCell(item.Quantity.ToString("F2"), regularFont));
                         itemsTable.AddCell(CreateCell(item.Unit ?? "", regularFont));
-                        itemsTable.AddCell(CreateCell($"{item.UnitPriceNet:F2} PLN", regularFont));
-                        itemsTable.AddCell(CreateCell($"{item.TotalNet:F2} PLN", regularFont));
+                        if (invoice.ShowNetPrices)
+                        {
+                            itemsTable.AddCell(CreateCell($"{item.UnitPriceNet:F2} PLN", regularFont));
+                            itemsTable.AddCell(CreateCell($"{item.TotalNet:F2} PLN", regularFont));
+                        }
                         lp++;
                     }
 
                     document.Add(itemsTable);
                 }
 
-                // === PODSUMOWANIE ===
-                document.Add(new Paragraph("\n"));
-                var summaryTable = new Table(2, false);
-                summaryTable.SetWidth(UnitValue.CreatePercentValue(50));
-                summaryTable.SetHorizontalAlignment(HorizontalAlignment.RIGHT);
+                if (invoice.ShowNetPrices)
+                {
+                    // === PODSUMOWANIE ===
+                    document.Add(new Paragraph("\n"));
+                    var summaryTable = new Table(2, false);
+                    summaryTable.SetWidth(UnitValue.CreatePercentValue(50));
+                    summaryTable.SetHorizontalAlignment(HorizontalAlignment.RIGHT);
 
-                summaryTable.AddCell(CreateSummaryCell("Wartoœæ netto:", boldFont));
-                summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalNet:F2} PLN", regularFont));
+                    summaryTable.AddCell(CreateSummaryCell("Warto netto:", boldFont));
+                    summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalNet:F2} PLN", regularFont));
 
-                summaryTable.AddCell(CreateSummaryCell("RAZEM:", boldFont));
-                summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalAmount:F2} PLN", boldFont));
+                    summaryTable.AddCell(CreateSummaryCell("RAZEM:", boldFont));
+                    summaryTable.AddCell(CreateSummaryCell($"{invoice.TotalAmount:F2} PLN", boldFont));
 
-                document.Add(summaryTable);
+                    document.Add(summaryTable);
+                }
 
                 // === UWAGI ===
                 if (!string.IsNullOrEmpty(invoice.Description))
@@ -290,11 +300,6 @@ namespace InvoPro.Services
 
                 // === STOPKA ===
                 document.Add(new Paragraph("\n\n"));
-                document.Add(new Paragraph($"Dokument wygenerowany: {DateTime.Now:dd.MM.yyyy HH:mm}")
-                    .SetFont(regularFont)
-                    .SetFontSize(8)
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetFontColor(ColorConstants.GRAY));
 
                 return filePath;
             }

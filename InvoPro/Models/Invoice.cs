@@ -16,6 +16,7 @@ namespace InvoPro.Models
         private string _clientAddress = string.Empty;
         private string _clientNip = string.Empty;
         private string _description = string.Empty;
+        private bool _showNetPrices = false;
 
         public Invoice()
         {
@@ -69,6 +70,12 @@ namespace InvoPro.Models
         {
             get => _description;
             set => SetProperty(ref _description, value);
+        }
+
+        public bool ShowNetPrices
+        {
+            get => _showNetPrices;
+            set => SetProperty(ref _showNetPrices, value);
         }
 
         public ObservableCollection<InvoiceItem> Items { get; set; }

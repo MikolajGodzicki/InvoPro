@@ -236,10 +236,10 @@ namespace InvoPro.Services
                 <th style='width: 30px;'>Lp.</th>
                 <th style='width: 200px;'>Nazwa towaru</th>
                 <th style='width: 120px;'>Wymiary</th>
-                <th style='width: 60px;'>Iloœæ</th>
+                <th style='width: 70px;'>Iloœæ</th>
                 <th style='width: 50px;'>Jedn.</th>
-                <th style='width: 80px;'>Cena netto (PLN)</th>
-                <th style='width: 100px;'>Wartoœæ netto (PLN)</th>
+                {(invoice.ShowNetPrices ? @"<th style='width: 80px;'>Cena netto (PLN)</th>
+                <th style='width: 100px;'>Wartoœæ netto (PLN)</th>" : "")}
             </tr>
         </thead>
         <tbody>
@@ -250,13 +250,13 @@ namespace InvoPro.Services
                 <td>{item.Description}</td>
                 <td class='number'>{item.Quantity:F2}</td>
                 <td style='text-align: center;'>{item.Unit}</td>
-                <td class='number'>{item.UnitPriceNet:F2}</td>
-                <td class='number'>{item.TotalNet:F2}</td>
+                {(invoice.ShowNetPrices ? $@"<td class='number'>{item.UnitPriceNet:F2}</td>
+                <td class='number'>{item.TotalNet:F2}</td>" : "")}
             </tr>"))}
         </tbody>
     </table>" : "")}
 
-    <div class='summary'>
+    {(invoice.ShowNetPrices ? $@"<div class='summary'>
         <div class='summary-row'>
             <span>Wartoœæ netto:</span>
             <span>{invoice.TotalNet:F2} PLN</span>
@@ -265,7 +265,7 @@ namespace InvoPro.Services
             <span>RAZEM:</span>
             <span>{invoice.TotalAmount:F2} PLN</span>
         </div>
-    </div>
+    </div>" : "")}
 
     {(!string.IsNullOrEmpty(invoice.Description) ? $@"
     <div class='notes'>

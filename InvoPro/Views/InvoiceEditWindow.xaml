@@ -27,6 +27,17 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
+                            <TextBlock Grid.Column="0" Text="Pokaż ceny netto:" 
+                                       VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
+                            <CheckBox Grid.Column="1" IsChecked="{Binding ShowNetPrices}" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
                             <TextBlock Grid.Column="0" Text="Tytuł:" 
                                        VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,10,0"/>
                             <ComboBox Grid.Column="1"
@@ -142,12 +153,37 @@
                             <DataGridTextColumn Header="Wymiary (opcjonalnie)" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
                             <DataGridTextColumn Header="Ilosc" Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, StringFormat=F2}" Width="60"/>
                             <DataGridTextColumn Header="Jednostka" Binding="{Binding Unit, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                            <DataGridTextColumn Header="Cena netto (PLN)" Binding="{Binding UnitPriceNet, UpdateSourceTrigger=PropertyChanged, StringFormat='F2'}" Width="110"/>
-                            <DataGridTextColumn Header="Wartosc netto (PLN)" Binding="{Binding TotalNet, Mode=OneWay, StringFormat='F2'}" Width="120" IsReadOnly="True"/>
+                            
+                            <DataGridTextColumn Header="Cena netto (PLN)" Binding="{Binding UnitPriceNet, UpdateSourceTrigger=PropertyChanged, StringFormat='F2'}" Width="110">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="DataContext.ShowNetPrices" RelativeSource="{RelativeSource AncestorType=Window}">
+                                        <Binding.Converter>
+                                            <BooleanToVisibilityConverter/>
+                                        </Binding.Converter>
+                                    </Binding>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+                            
+                            <DataGridTextColumn Header="Wartosc netto (PLN)" Binding="{Binding TotalNet, Mode=OneWay, StringFormat='F2'}" Width="120" IsReadOnly="True">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="DataContext.ShowNetPrices" RelativeSource="{RelativeSource AncestorType=Window}">
+                                        <Binding.Converter>
+                                            <BooleanToVisibilityConverter/>
+                                        </Binding.Converter>
+                                    </Binding>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                     
                     <Border Grid.Row="2" Background="#ECF0F1" Padding="15" Margin="0,10,0,0">
+                        <Border.Visibility>
+                            <Binding Path="ShowNetPrices">
+                                <Binding.Converter>
+                                    <BooleanToVisibilityConverter/>
+                                </Binding.Converter>
+                            </Binding>
+                        </Border.Visibility>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>

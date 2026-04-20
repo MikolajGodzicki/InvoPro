@@ -194,6 +194,14 @@ namespace InvoPro.Services
                     catch
                     {
                     }
+
+                    try
+                    {
+                        await context.Database.ExecuteSqlRawAsync("ALTER TABLE Invoices ADD COLUMN ShowNetPrices INTEGER NOT NULL DEFAULT 0;");
+                    }
+                    catch
+                    {
+                    }
                 }
             }
             catch (Exception ex)
