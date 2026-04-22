@@ -180,6 +180,24 @@ namespace InvoPro.Services
             background-color: #f8f9fa;
             border-radius: 5px;
         }}
+        .signatures {{
+            clear: both;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            padding-top: 20px;
+        }}
+        .signature-box {{
+            width: 250px;
+            text-align: center;
+        }}
+        .signature-line {{
+            border-top: 1px dotted #333;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 10px;
+            color: #555;
+        }}
         .footer {{
             text-align: center;
             margin-top: 50px;
@@ -225,7 +243,6 @@ namespace InvoPro.Services
         </div>
         <div>
             <strong>Data wystawienia:</strong> {invoice.IssueDate:dd.MM.yyyy}<br>
-            <strong>Wystawi³:</strong> {invoice.ClientAddress}
         </div>
     </div>
 
@@ -272,6 +289,17 @@ namespace InvoPro.Services
         <h3>Uwagi:</h3>
         <p>{invoice.Description}</p>
     </div>" : "")}
+
+    <div class='signatures'>
+        <div class='signature-box'>
+            <strong>Wystawi³: {invoice.ClientAddress}</strong>
+            <div class='signature-line'>Podpis</div>
+        </div>
+        <div class='signature-box'>
+            <strong>Odebra³</strong>
+            <div class='signature-line'>Piecz¹tka firmy i podpis</div>
+        </div>
+    </div>
 </body>
 </html>");
         }

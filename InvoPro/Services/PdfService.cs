@@ -228,8 +228,8 @@ namespace InvoPro.Services
                         place = addressParts[^1].Trim();
                 }
                 invoiceInfoTable.AddCell(CreateInfoCell(place, regularFont));
-                invoiceInfoTable.AddCell(CreateInfoCell("Wystawi³:", boldFont));
-                invoiceInfoTable.AddCell(CreateInfoCell(invoice.ClientAddress ?? string.Empty, regularFont));
+                invoiceInfoTable.AddCell(new Cell().SetBorder(iText.Layout.Borders.Border.NO_BORDER));
+                invoiceInfoTable.AddCell(new Cell().SetBorder(iText.Layout.Borders.Border.NO_BORDER));
 
                 document.Add(invoiceInfoTable);
 
@@ -297,6 +297,31 @@ namespace InvoPro.Services
                     document.Add(new Paragraph("Uwagi:").SetFont(boldFont));
                     document.Add(new Paragraph(invoice.Description).SetFont(regularFont));
                 }
+
+                // === PODPISY (WYSTAWI³ / ODEBRA£) ===
+                document.Add(new Paragraph("\n\n\n")); // Odstêp od uwag
+
+                var signaturesTable = new Table(2, false);
+                signaturesTable.SetWidth(UnitValue.CreatePercentValue(100));
+
+                // 1) Komórki tekstowe Wystawi³ / Odebra³
+                var wWystawil = new Cell().Add(new Paragraph($"Wystawi³: {invoice.ClientAddress ?? ""}")).SetBorder(iText.Layout.Borders.Border.NO_BORDER).SetTextAlignment(TextAlignment.CENTER).SetFont(boldFont);
+                var wOdebral = new Cell().Add(new Paragraph("Odebra³:")).SetBorder(iText.Layout.Borders.Border.NO_BORDER).SetTextAlignment(TextAlignment.CENTER).SetFont(boldFont);
+
+                signaturesTable.AddCell(wWystawil);
+                signaturesTable.AddCell(wOdebral);
+                
+                // 2) Puste miejsce z kropkowan¹ lini¹ i opisem podpisu na dole - wymuszenie odstêpu
+                var pWystawilPodpis = new Paragraph("\n\n...........................................................\nPodpis")
+                    .SetFont(regularFont).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER);
+                    
+                var pOdebralPodpis = new Paragraph("\n\n...........................................................\nPiecz¹tka firmy i podpis")
+                    .SetFont(regularFont).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER);
+
+                signaturesTable.AddCell(new Cell().Add(pWystawilPodpis).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
+                signaturesTable.AddCell(new Cell().Add(pOdebralPodpis).SetBorder(iText.Layout.Borders.Border.NO_BORDER));
+
+                document.Add(signaturesTable);
 
                 // === STOPKA ===
                 document.Add(new Paragraph("\n\n"));
